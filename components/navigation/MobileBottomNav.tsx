@@ -21,6 +21,7 @@ export function MobileBottomNav() {
   return (
     <nav
       data-bottom-nav
+      data-agent-section="global.bottom-nav"
       aria-label="Main"
       className="fixed inset-x-0 bottom-0 z-40 border-t border-line-soft bg-white/95 pb-[max(13px,env(safe-area-inset-bottom))] backdrop-blur-md supports-[backdrop-filter]:bg-white/88 lg:hidden"
     >

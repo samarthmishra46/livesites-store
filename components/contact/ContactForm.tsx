@@ -19,7 +19,7 @@ export function ContactForm() {
 
   if (sent) {
     return (
-      <div role="status" className="rounded-2xl border border-line-soft bg-white p-8 text-center shadow-card md:p-12">
+      <div data-agent-section="contact.form" role="status" className="rounded-2xl border border-line-soft bg-white p-8 text-center shadow-card md:p-12">
         <span className="mx-auto flex size-12 items-center justify-center rounded-full bg-ink text-white">
           <Check className="size-5" strokeWidth={2} aria-hidden />
         </span>
@@ -37,7 +37,7 @@ export function ContactForm() {
   }
 
   return (
-    <form onSubmit={submit} className="space-y-5 rounded-2xl border border-line-soft bg-white p-6 shadow-card md:p-9">
+    <form data-agent-section="contact.form" onSubmit={submit} className="space-y-5 rounded-2xl border border-line-soft bg-white p-6 shadow-card md:p-9">
       <div className="grid gap-5 sm:grid-cols-2">
         <div>
           <label htmlFor="c-name" className="mb-1.5 block text-[13px] text-ink-soft">

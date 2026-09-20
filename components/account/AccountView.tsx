@@ -44,7 +44,7 @@ function SignIn() {
   };
 
   return (
-    <PageContainer className="pb-6">
+    <PageContainer data-agent-section="account.main" className="pb-6">
       <div className="grid gap-10 md:grid-cols-2 md:gap-16">
         <div className="rounded-2xl border border-line-soft bg-white p-6 shadow-card md:p-9">
           <div className="flex gap-6 border-b border-line-soft" role="tablist">
@@ -137,7 +137,7 @@ function Dashboard({ profile }: { profile: Profile }) {
   const update = (patch: Partial<Profile>) => profileStore.set((p) => (p ? { ...p, ...patch } : p));
 
   return (
-    <PageContainer className="pb-6">
+    <PageContainer data-agent-section="account.main" className="pb-6">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <p className="font-serif text-[22px] text-ink-soft md:text-[26px]">Welcome back, {profile.name}.</p>
         <button

@@ -10,7 +10,7 @@ export function RecommendationCard() {
   if (!product) return null;
 
   return (
-    <PageContainer className="mt-[7px] md:mt-12 lg:mt-14">
+    <PageContainer data-agent-section="home.recommendation" className="mt-[7px] md:mt-12 lg:mt-14">
       <Link
         href={`/shop/${product.slug}`}
         className="group flex h-[63.5px] items-center rounded-[12px] border border-[#eceae8] bg-white pr-[14px] pl-[10px] shadow-[0_3px_8px_-4px_rgb(0_0_0/0.08)] transition-[box-shadow,border-color] duration-300 hover:border-line hover:shadow-card md:h-[112px] md:rounded-2xl md:pr-7 md:pl-4 lg:mx-auto lg:max-w-[880px]"

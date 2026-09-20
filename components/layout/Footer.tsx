@@ -5,7 +5,7 @@ import { PageContainer } from "./PageContainer";
 
 export function Footer() {
   return (
-    <footer className="mt-16 border-t border-line-soft bg-ivory/60 md:mt-24">
+    <footer data-agent-section="global.footer" className="mt-16 border-t border-line-soft bg-ivory/60 md:mt-24">
       <PageContainer className="py-10 md:py-14 lg:py-16">
         <div className="grid gap-10 lg:grid-cols-[1.3fr_2fr] lg:gap-16">
           <div className="max-w-sm">

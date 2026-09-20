@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Inter, Inter_Tight, Newsreader } from "next/font/google";
+import { SectionSpotlight } from "@/components/agent/SectionSpotlight";
 import { AIAssistant } from "@/components/ai-assistant/AIAssistant";
 import { CartDrawer } from "@/components/cart/CartDrawer";
 import { Footer } from "@/components/layout/Footer";
@@ -45,6 +46,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           <Footer />
         </div>
         <MobileBottomNav />
+        <SectionSpotlight />
         <AIAssistant />
         <CartDrawer />
         <SearchOverlay />

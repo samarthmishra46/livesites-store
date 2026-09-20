@@ -20,7 +20,7 @@ export function ProductGallery({ product }: { product: Product }) {
   };
 
   return (
-    <div className="md:flex md:gap-4 lg:gap-5">
+    <div data-agent-section="product.gallery" className="md:flex md:gap-4 lg:gap-5">
       {images.length > 1 && (
         <div className="hidden w-20 shrink-0 flex-col gap-3 md:flex" role="tablist" aria-label="Product images">
           {images.map((img, i) => (

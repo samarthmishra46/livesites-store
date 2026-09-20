@@ -1,6 +1,6 @@
 "use client";
 
-import { Mic, MicOff, Monitor, MonitorUp, Video, VideoOff, type LucideIcon } from "lucide-react";
+import { MessageSquare, MessageSquareText, Mic, MicOff, Video, VideoOff, type LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 function ControlButton({
@@ -44,17 +44,17 @@ function ControlButton({
 export function AIAssistantControls({
   micEnabled,
   cameraEnabled,
-  screenShared,
+  chatOpen,
   onToggleMic,
   onToggleCamera,
-  onToggleScreen,
+  onToggleChat,
 }: {
   micEnabled: boolean;
   cameraEnabled: boolean;
-  screenShared: boolean;
+  chatOpen: boolean;
   onToggleMic: () => void;
   onToggleCamera: () => void;
-  onToggleScreen: () => void;
+  onToggleChat: () => void;
 }) {
   return (
     <div
@@ -76,10 +76,10 @@ export function AIAssistantControls({
         filled={cameraEnabled}
       />
       <ControlButton
-        active={screenShared}
-        onClick={onToggleScreen}
-        label={screenShared ? "Stop sharing screen" : "Share your screen with the stylist"}
-        icon={screenShared ? MonitorUp : Monitor}
+        active={chatOpen}
+        onClick={onToggleChat}
+        label={chatOpen ? "Close chat" : "Open chat and transcript"}
+        icon={chatOpen ? MessageSquareText : MessageSquare}
       />
     </div>
   );

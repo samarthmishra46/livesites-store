@@ -3,71 +3,13 @@ import Link from "next/link";
 import { Check } from "lucide-react";
 import { PageContainer } from "@/components/layout/PageContainer";
 import { PageIntro } from "@/components/ui/PageIntro";
+import { pricingFaqs, pricingPlans } from "@/data/pages";
 import { cn } from "@/lib/utils";
 
 export const metadata: Metadata = {
   title: "Pricing",
   description: "Livesites memberships: free live styling for everyone, with more for members.",
 };
-
-const plans = [
-  {
-    name: "Essential",
-    price: "Free",
-    cadence: "",
-    blurb: "Everything you need to shop with confidence.",
-    features: [
-      "Live AI stylist on every page",
-      "Free shipping on orders over $100",
-      "30-day returns",
-      "Wishlist saved on this device",
-    ],
-    cta: { label: "Start shopping", href: "/shop" },
-  },
-  {
-    name: "Aurora Circle",
-    price: "$9",
-    cadence: "/ month",
-    blurb: "For regulars who want their stylist to know them.",
-    features: [
-      "Everything in Essential",
-      "Free express shipping on every order",
-      "Fit profile remembered across devices",
-      "Early access to new collections",
-      "Free alterations on blazers and trousers",
-    ],
-    cta: { label: "Join Aurora Circle", href: "/account" },
-    featured: true,
-  },
-  {
-    name: "Atelier",
-    price: "$29",
-    cadence: "/ month",
-    blurb: "A dedicated human stylist, on call.",
-    features: [
-      "Everything in Aurora Circle",
-      "Monthly 30-minute video session with a senior stylist",
-      "Seasonal capsule edits chosen for you",
-      "Home try-on: keep what you love, return the rest",
-    ],
-    cta: { label: "Choose Atelier", href: "/account" },
-  },
-];
-
-const faqs = [
-  {
-    q: "Is the live stylist really free?",
-    a: "Yes. Every visitor can talk to the Livesites stylist at no cost and with no account. Memberships add perks around delivery, fit and human styling.",
-  },
-  {
-    q: "Can I cancel anytime?",
-    a: "Memberships are month to month. Cancel from your account page and you keep your benefits until the end of the billing period.",
-  },
-  {
-    q: "Do member prices differ from regular prices?",
-    a: "No. Product prices are the same for everyone — we don't run member-only discounts or seasonal sales.",
-  },
-];
 
 export default function PricingPage() {
   return (
@@ -76,9 +18,9 @@ export default function PricingPage() {
         <p>Live styling is free for everyone. Membership adds faster delivery, a fit profile and time with a senior stylist.</p>
       </PageIntro>
 
-      <PageContainer>
+      <PageContainer data-agent-section="pricing.plans">
         <div className="grid gap-5 md:grid-cols-3 md:gap-6">
-          {plans.map((plan) => (
+          {pricingPlans.map((plan) => (
             <section
               key={plan.name}
               aria-labelledby={`plan-${plan.name}`}
@@ -122,13 +64,13 @@ export default function PricingPage() {
         </div>
       </PageContainer>
 
-      <PageContainer as="section" aria-labelledby="faq-title" className="mt-20 md:mt-28">
+      <PageContainer as="section" data-agent-section="pricing.faq" aria-labelledby="faq-title" className="mt-20 md:mt-28">
         <div className="mx-auto max-w-[760px]">
           <h2 id="faq-title" className="font-serif text-[30px] tracking-[-0.02em] md:text-[36px]">
             Questions
           </h2>
           <div className="mt-6 divide-y divide-line border-y border-line">
-            {faqs.map((f) => (
+            {pricingFaqs.map((f) => (
               <details key={f.q} className="group">
                 <summary className="flex cursor-pointer list-none items-center justify-between gap-4 py-5 text-[15px] text-ink [&::-webkit-details-marker]:hidden">
                   {f.q}

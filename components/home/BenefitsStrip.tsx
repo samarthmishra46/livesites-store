@@ -10,7 +10,7 @@ const icons: Record<(typeof benefits)[number]["icon"], LucideIcon> = {
 
 export function BenefitsStrip({ className }: { className?: string }) {
   return (
-    <section aria-label="Why shop with us" className={cn("mx-auto w-full max-w-[1280px] md:px-8 lg:px-10", className)}>
+    <section data-agent-section="home.benefits" aria-label="Why shop with us" className={cn("mx-auto w-full max-w-[1280px] md:px-8 lg:px-10", className)}>
       <ul className="grid grid-cols-3 pt-[14px] pb-[18px] md:border-b md:border-line-soft md:py-10 lg:py-12">
         {benefits.map((b, i) => {
           const Icon = icons[b.icon];

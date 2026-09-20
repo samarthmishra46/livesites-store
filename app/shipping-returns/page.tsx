@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { PageIntro } from "@/components/ui/PageIntro";
 import { Prose } from "@/components/ui/Prose";
+import { shippingRates } from "@/data/pages";
 
 export const metadata: Metadata = {
   title: "Shipping & Returns",
@@ -13,12 +14,6 @@ const toc = [
   { id: "returns", label: "Returns" },
   { id: "exchanges", label: "Exchanges" },
   { id: "refunds", label: "Refunds" },
-];
-
-const rates = [
-  { method: "Standard", time: "3–5 business days", price: "$8 · free over $100" },
-  { method: "Express", time: "1–2 business days", price: "$18 · free for Aurora Circle" },
-  { method: "International", time: "5–10 business days", price: "From $25, duties included" },
 ];
 
 export default function ShippingReturnsPage() {
@@ -45,7 +40,7 @@ export default function ShippingReturnsPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-line">
-              {rates.map((r) => (
+              {shippingRates.map((r) => (
                 <tr key={r.method}>
                   <th scope="row" className="px-4 py-3 font-normal text-ink">{r.method}</th>
                   <td className="px-4 py-3">{r.time}</td>

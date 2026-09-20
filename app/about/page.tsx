@@ -4,35 +4,14 @@ import Link from "next/link";
 import { ArrowRight, Leaf, Scissors, Video } from "lucide-react";
 import { PageContainer } from "@/components/layout/PageContainer";
 import { PageIntro } from "@/components/ui/PageIntro";
+import { aboutCommitments, aboutValues } from "@/data/pages";
 
 export const metadata: Metadata = {
   title: "About Us",
   description: "Livesites makes elevated essentials in natural fibres — and pairs every shopper with a live stylist.",
 };
 
-const values = [
-  {
-    icon: Leaf,
-    title: "Natural fibres, fewer pieces",
-    body: "European flax linen, mulberry silk and leather from Gold-rated tanneries. We make small runs of pieces designed to work together, and we don't do seasonal sales.",
-  },
-  {
-    icon: Scissors,
-    title: "Made to be worn for years",
-    body: "French seams, cupro linings and generous seam allowances so a tailor can adjust the fit as you need it. Every piece is wear-tested by our team before it goes on sale.",
-  },
-  {
-    icon: Video,
-    title: "A stylist in every visit",
-    body: "Our live stylist can see what you're browsing, check measurements against our fit data and put together a look — the way a good shop assistant always has.",
-  },
-];
-
-const commitments = [
-  { value: "$100", label: "Free shipping on every order over $100" },
-  { value: "30 days", label: "To return unworn pieces, free within the US" },
-  { value: "Live", label: "A stylist on hand every time you visit" },
-];
+const valueIcons = { leaf: Leaf, scissors: Scissors, video: Video };
 
 export default function AboutPage() {
   return (
@@ -45,7 +24,7 @@ export default function AboutPage() {
         </p>
       </PageIntro>
 
-      <PageContainer>
+      <PageContainer data-agent-section="about.story">
         <div className="grid items-center gap-8 md:grid-cols-2 md:gap-14">
           <div className="relative aspect-[4/5] overflow-hidden rounded-2xl bg-sand">
             <Image
@@ -81,24 +60,27 @@ export default function AboutPage() {
         </div>
       </PageContainer>
 
-      <PageContainer as="section" aria-labelledby="values-title" className="mt-20 md:mt-28">
+      <PageContainer as="section" data-agent-section="about.values" aria-labelledby="values-title" className="mt-20 md:mt-28">
         <h2 id="values-title" className="sr-only">
           What we believe
         </h2>
         <ul className="grid gap-10 md:grid-cols-3 md:gap-8">
-          {values.map(({ icon: Icon, title, body }) => (
-            <li key={title} className="border-t border-line pt-6">
-              <Icon className="size-6 text-ink" strokeWidth={1.3} aria-hidden />
-              <h3 className="mt-5 font-serif text-[22px] tracking-[-0.01em] text-ink">{title}</h3>
-              <p className="mt-2 text-[14px] leading-relaxed text-muted">{body}</p>
-            </li>
-          ))}
+          {aboutValues.map(({ icon, title, body }) => {
+            const Icon = valueIcons[icon];
+            return (
+              <li key={title} className="border-t border-line pt-6">
+                <Icon className="size-6 text-ink" strokeWidth={1.3} aria-hidden />
+                <h3 className="mt-5 font-serif text-[22px] tracking-[-0.01em] text-ink">{title}</h3>
+                <p className="mt-2 text-[14px] leading-relaxed text-muted">{body}</p>
+              </li>
+            );
+          })}
         </ul>
       </PageContainer>
 
-      <PageContainer as="section" aria-label="Our commitments" className="mt-20 md:mt-28">
+      <PageContainer as="section" data-agent-section="about.commitments" aria-label="Our commitments" className="mt-20 md:mt-28">
         <dl className="grid gap-8 rounded-2xl bg-ivory px-6 py-10 md:grid-cols-3 md:px-12 md:py-14">
-          {commitments.map((s) => (
+          {aboutCommitments.map((s) => (
             <div key={s.label}>
               <dt className="sr-only">{s.label}</dt>
               <dd className="font-serif text-[44px] leading-none tracking-[-0.03em] text-ink md:text-[56px]">{s.value}</dd>

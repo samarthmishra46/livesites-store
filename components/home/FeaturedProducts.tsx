@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils";
 
 export function FeaturedProducts() {
   return (
-    <PageContainer as="section" aria-labelledby="featured-title" className="md:pt-14 lg:pt-16">
+    <PageContainer as="section" data-agent-section="home.featured" aria-labelledby="featured-title" className="md:pt-14 lg:pt-16">
       <SectionHeading id="featured-title" title="Featured for You" action={{ label: "View All", href: "/shop" }} />
       <div className="mt-[8px] grid grid-cols-2 gap-x-4 gap-y-6 md:mt-6 md:grid-cols-3 md:gap-x-6 lg:mt-8 lg:grid-cols-4 lg:gap-x-7">
         {featuredProducts.map((product, i) => (

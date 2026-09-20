@@ -17,7 +17,7 @@ export function SiteHeader() {
   const dispatch = useActionDispatcher();
 
   return (
-    <header data-site-header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md supports-[backdrop-filter]:bg-white/85 lg:border-b lg:border-line-soft">
+    <header data-site-header data-agent-section="global.header" className="sticky top-0 z-40 bg-white/95 backdrop-blur-md supports-[backdrop-filter]:bg-white/85 lg:border-b lg:border-line-soft">
       <div className="mx-auto flex h-[46px] max-w-[1280px] items-center justify-between pr-1 pl-4 md:h-14 md:pr-5 md:pl-8 lg:grid lg:h-[72px] lg:grid-cols-[1fr_auto_1fr] lg:px-10">
         <Link
           href="/"

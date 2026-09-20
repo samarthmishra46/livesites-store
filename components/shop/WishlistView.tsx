@@ -17,7 +17,7 @@ export function WishlistView() {
   if (saved.length === 0) {
     return (
       <>
-        <PageContainer className="pb-4">
+        <PageContainer data-agent-section="wishlist.items" className="pb-4">
           <div className="rounded-2xl border border-line-soft bg-ivory/70 px-6 py-14 text-center md:py-20">
             <Heart className="mx-auto size-8 text-subtle" strokeWidth={1.2} aria-hidden />
             <p className="mt-4 font-serif text-[26px] tracking-[-0.01em] md:text-[32px]">Nothing saved yet</p>
@@ -32,7 +32,7 @@ export function WishlistView() {
             </Link>
           </div>
         </PageContainer>
-        <PageContainer as="section" aria-labelledby="wishlist-suggestions" className="mt-12 md:mt-16">
+        <PageContainer as="section" data-agent-section="wishlist.suggestions" aria-labelledby="wishlist-suggestions" className="mt-12 md:mt-16">
           <SectionHeading id="wishlist-suggestions" title="You might love" action={{ label: "View All", href: "/shop" }} />
           <div className="mt-4 grid grid-cols-2 gap-x-4 gap-y-6 md:mt-6 md:grid-cols-3 md:gap-x-6 lg:grid-cols-4 lg:gap-x-7">
             {featuredProducts.map((p, i) => (
@@ -45,7 +45,7 @@ export function WishlistView() {
   }
 
   return (
-    <PageContainer>
+    <PageContainer data-agent-section="wishlist.items">
       <div className="grid grid-cols-2 gap-x-4 gap-y-8 md:grid-cols-3 md:gap-x-6 md:gap-y-12 lg:grid-cols-4 lg:gap-x-7">
         {saved.map((p, i) => (
           <div key={p.id} className="flex flex-col">

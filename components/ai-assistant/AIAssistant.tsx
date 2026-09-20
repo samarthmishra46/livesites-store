@@ -4,13 +4,15 @@ import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useLayoutEffect, useRef, type KeyboardEvent, type PointerEvent } from "react";
 import { X } from "lucide-react";
-import { assistantUI, assistantUIStore, useAssistant } from "@/lib/ai-assistant/useAssistant";
+import { assistantUI, assistantUIStore, getAssistantOutputLevel, useAssistant } from "@/lib/ai-assistant/useAssistant";
 import type { AssistantStatus } from "@/lib/ai-assistant/types";
 import { clamp, cn } from "@/lib/utils";
+import { AIAssistantChat } from "./AIAssistantChat";
 import { AIAssistantControls } from "./AIAssistantControls";
 
 const GREETING = "How can I help you today?";
 const EDGE = 6;
+const SHOW_LATENCY = process.env.NEXT_PUBLIC_AGENT_DEBUG === "1";
 
 type Point = { x: number; y: number };
 
@@ -54,12 +56,15 @@ function place(card: HTMLElement, p: Point) {
 
 const statusLabel: Record<AssistantStatus, string> = {
   idle: "Live",
-  connecting: "Live",
+  connecting: "Connecting",
   live: "Live",
   muted: "Muted",
   disconnected: "Offline",
   error: "Offline",
 };
+
+const bubble =
+  "absolute inset-x-[1.05em] bottom-[4.05em] line-clamp-5 animate-rise-in rounded-[1.6em] bg-[#6b6360]/45 px-[0.55em] py-[0.6em] text-center font-display text-[0.93em] leading-[1.36] text-white backdrop-blur-md [text-shadow:0_1px_1px_rgb(0_0_0/0.12)]";
 
 export function AIAssistant() {
   const { ui, session, posterSrc } = useAssistant();
@@ -69,6 +74,7 @@ export function AIAssistant() {
   const drag = useRef<{ id: number; dx: number; dy: number; startX: number; startY: number; moved: boolean } | null>(null);
   const current = useRef<Point | null>(null);
   const wasOpen = useRef(ui.open);
+  const haloRef = useRef<HTMLDivElement>(null);
 
   // Position before paint on open, on route change and whenever the saved position changes.
   const layout = useCallback(() => {
@@ -97,8 +103,25 @@ export function AIAssistant() {
     requestAnimationFrame(() => (ui.open ? cardRef.current : launcherRef.current)?.focus({ preventScroll: true }));
   }, [ui.open]);
 
+  // Speaking ring follows the loudness of the assistant's voice.
+  useEffect(() => {
+    const halo = haloRef.current;
+    if (!halo || !session.speaking) return;
+    let raf = 0;
+    const tick = () => {
+      const level = getAssistantOutputLevel();
+      halo.style.boxShadow = `0 0 0 ${(0.14 + level * 0.32).toFixed(3)}em rgb(40 189 77 / ${(0.3 + level * 0.45).toFixed(3)})`;
+      raf = requestAnimationFrame(tick);
+    };
+    tick();
+    return () => {
+      cancelAnimationFrame(raf);
+      halo.style.boxShadow = "";
+    };
+  }, [session.speaking, ui.open]);
+
   const onPointerDown = (e: PointerEvent<HTMLElement>) => {
-    if (e.button !== 0 || (e.target as HTMLElement).closest("button")) return;
+    if (e.button !== 0 || (e.target as HTMLElement).closest("button, a, input, textarea, [data-no-drag]")) return;
     const card = cardRef.current;
     if (!card) return;
     const r = card.getBoundingClientRect();
@@ -162,7 +185,8 @@ export function AIAssistant() {
   };
 
   const live = session.status === "live" || session.status === "idle" || session.status === "connecting";
-  const message = session.message?.text ?? GREETING;
+  const offline = session.status === "error" || session.status === "disconnected";
+  const message = (offline && session.detail) || session.message?.text || GREETING;
 
   if (!ui.open) {
     return (
@@ -206,6 +230,14 @@ export function AIAssistant() {
       )}
     >
       <div
+        ref={haloRef}
+        aria-hidden
+        className={cn(
+          "pointer-events-none absolute inset-0 rounded-[1.45em] transition-opacity duration-300",
+          session.speaking ? "opacity-100" : "opacity-0",
+        )}
+      />
+      <div
         className={cn(
           "relative h-[18.1em] w-[10.5em] animate-assistant-in overflow-hidden rounded-[1.45em] bg-[#cfc8c2]",
           "shadow-float ring-[0.15em] ring-white/70 ring-inset",
@@ -247,10 +279,14 @@ export function AIAssistant() {
             aria-hidden
           />
           <span className="text-[1.05em] leading-none">{statusLabel[session.status]}</span>
+          {SHOW_LATENCY && session.latencyMs != null && (
+            <span className="text-[0.8em] leading-none text-[#55535a] tabular-nums">· {session.latencyMs} ms</span>
+          )}
         </div>
 
         <button
           type="button"
+          data-assistant-close
           onClick={assistantUI.close}
           aria-label="Close assistant"
           className="absolute top-[0.8em] right-[0.75em] inline-flex size-[2.3em] items-center justify-center rounded-full bg-[#5c5a5e]/35 text-white backdrop-blur-md transition-colors hover:bg-[#5c5a5e]/55 focus-visible:outline-white"
@@ -258,30 +294,42 @@ export function AIAssistant() {
           <X className="size-[1.2em]" strokeWidth={2} aria-hidden />
         </button>
 
-        {ui.screenShared && (
-          <p className="absolute top-[3.55em] left-[0.75em] animate-fade-in rounded-full bg-black/45 px-[0.7em] py-[0.25em] text-[0.8em] text-white backdrop-blur-md">
-            Sharing screen
+        {/* transcript bubble — tap to reconnect when offline */}
+        {offline ? (
+          <button
+            key={message}
+            type="button"
+            onClick={assistantUI.reconnect}
+            className={cn(bubble, "cursor-pointer hover:bg-[#6b6360]/60 focus-visible:outline-white")}
+          >
+            {message}
+          </button>
+        ) : (
+          <p key={message} aria-live="polite" className={bubble}>
+            {message}
           </p>
         )}
-
-        {/* transcript bubble */}
-        <p
-          key={message}
-          aria-live="polite"
-          className="absolute inset-x-[1.05em] bottom-[4.05em] animate-rise-in rounded-[1.6em] bg-[#6b6360]/45 px-[0.55em] py-[0.6em] text-center font-display text-[0.93em] leading-[1.36] text-white backdrop-blur-md [text-shadow:0_1px_1px_rgb(0_0_0/0.12)]"
-        >
-          {message}
-        </p>
 
         <AIAssistantControls
           micEnabled={ui.micEnabled}
           cameraEnabled={ui.cameraEnabled}
-          screenShared={ui.screenShared}
+          chatOpen={ui.chatOpen}
           onToggleMic={assistantUI.toggleMic}
           onToggleCamera={assistantUI.toggleCamera}
-          onToggleScreen={assistantUI.toggleScreenShare}
+          onToggleChat={assistantUI.toggleChat}
         />
       </div>
+
+      {ui.chatOpen && (
+        <AIAssistantChat
+          cardRef={cardRef}
+          position={ui.position}
+          transcript={session.transcript}
+          textOnly={session.inputMode === "text"}
+          onSend={assistantUI.sendText}
+          onClose={assistantUI.toggleChat}
+        />
+      )}
     </aside>
   );
 }

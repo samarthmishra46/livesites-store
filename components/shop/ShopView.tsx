@@ -72,7 +72,7 @@ export function ShopView() {
 
   return (
     <>
-      <PageContainer className="pt-7 md:pt-12 lg:pt-16">
+      <PageContainer data-agent-section="shop.intro" className="pt-7 md:pt-12 lg:pt-16">
         <p className="flex items-center gap-3 text-[10px] tracking-[0.42em] text-[#110f10] uppercase md:text-[11px]">
           <span>AURORA</span>
           <span aria-hidden className="h-px w-8 bg-[#9c9a98]" />
@@ -89,7 +89,7 @@ export function ShopView() {
       </PageContainer>
 
       {/* filters */}
-      <div className="sticky top-[46px] z-20 mt-6 border-y border-line-soft bg-canvas/92 backdrop-blur-md md:top-14 lg:top-[72px]">
+      <div data-agent-section="shop.filters" className="sticky top-[46px] z-20 mt-6 border-y border-line-soft bg-canvas/92 backdrop-blur-md md:top-14 lg:top-[72px]">
         <PageContainer className="flex items-center gap-3 py-3">
           <div className="no-scrollbar -mx-4 flex flex-1 gap-2 overflow-x-auto px-4 md:mx-0 md:px-0" role="group" aria-label="Category">
             {["", ...categories].map((c) => {
@@ -206,7 +206,7 @@ export function ShopView() {
         </PageContainer>
       </div>
 
-      <PageContainer className="pt-5 md:pt-8">
+      <PageContainer data-agent-section="shop.grid" className="pt-5 md:pt-8">
         {active.length > 0 && (
           <div className="mb-5 flex flex-wrap items-center gap-2">
             {active.map((f) => (

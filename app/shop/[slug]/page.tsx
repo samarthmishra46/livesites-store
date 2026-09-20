@@ -47,7 +47,7 @@ export default async function ProductPage({ params }: PageProps<"/shop/[slug]">)
       </div>
 
       {pairs.length > 0 && (
-        <PageContainer as="section" aria-labelledby="pairs-title" className="mt-16 md:mt-24">
+        <PageContainer as="section" data-agent-section="product.pairs" aria-labelledby="pairs-title" className="mt-16 md:mt-24">
           <SectionHeading id="pairs-title" title="Pairs perfectly with" action={{ label: "View All", href: "/shop" }} />
           <div className="mt-4 grid grid-cols-2 gap-x-4 gap-y-6 md:mt-6 md:grid-cols-3 md:gap-x-6 lg:grid-cols-4 lg:gap-x-7">
             {pairs.map((p) => (

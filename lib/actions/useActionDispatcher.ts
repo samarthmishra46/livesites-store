@@ -3,7 +3,9 @@
 import { useRouter } from "next/navigation";
 import { useCallback } from "react";
 import { getProductById, getProductBySlug } from "@/data/products";
-import { cart, ui, wishlist } from "@/lib/store/shop";
+import { revealSection, scrollBehavior } from "@/lib/agent/sections";
+import { getSection, routePattern } from "@/lib/agent/siteMap";
+import { cart, cartStore, ui, uiStore, wishlist } from "@/lib/store/shop";
 import type { AssistantAction, DispatchResult } from "./types";
 
 /** Internal routes the dispatcher may navigate to. External URLs are rejected. */
@@ -16,8 +18,30 @@ export function useActionDispatcher() {
     (action: AssistantAction): DispatchResult => {
       switch (action.type) {
         case "scroll": {
+          const behavior = scrollBehavior();
+          if (action.direction === "top" || action.direction === "bottom") {
+            window.scrollTo({ top: action.direction === "top" ? 0 : document.documentElement.scrollHeight, behavior });
+            return { ok: true };
+          }
           const amount = action.amount ?? Math.round(window.innerHeight * 0.8);
-          window.scrollBy({ top: action.direction === "down" ? amount : -amount, behavior: "smooth" });
+          window.scrollBy({ top: action.direction === "down" ? amount : -amount, behavior });
+          return { ok: true };
+        }
+        case "scroll_to_section":
+        case "highlight_section": {
+          const section = getSection(action.sectionId);
+          if (!section) return { ok: false, reason: "Unknown section" };
+          const here = routePattern(window.location.pathname);
+          if (section.route !== "*" && section.route !== here) {
+            if (section.route.includes("[")) return { ok: false, reason: "That section is on product pages — open a product first" };
+            router.push(section.route);
+          }
+          // overlays would hide the section being shown
+          const { cartOpen, searchOpen, menuOpen } = uiStore.get();
+          if (cartOpen) ui.closeCart();
+          if (searchOpen) ui.closeSearch();
+          if (menuOpen) ui.closeMenu();
+          void revealSection(section, action.type === "highlight_section");
           return { ok: true };
         }
         case "navigate":
@@ -45,11 +69,16 @@ export function useActionDispatcher() {
         case "add_to_cart": {
           const product = getProductById(action.productId);
           if (!product) return { ok: false, reason: "Unknown product" };
-          cart.add(product.id, { quantity: action.quantity });
+          if (action.size && !product.sizes.includes(action.size)) return { ok: false, reason: `${product.name} comes in ${product.sizes.join(", ")}` };
+          if (action.colorId && !product.colors.some((c) => c.id === action.colorId)) {
+            return { ok: false, reason: `${product.name} comes in ${product.colors.map((c) => c.name).join(", ")}` };
+          }
+          cart.add(product.id, { quantity: action.quantity, size: action.size, colorId: action.colorId });
           ui.openCart();
           return { ok: true };
         }
         case "remove_from_cart":
+          if (!cartStore.get().some((l) => l.productId === action.productId)) return { ok: false, reason: "That piece isn't in the bag" };
           cart.removeProduct(action.productId);
           return { ok: true };
         case "filter_products": {
@@ -76,6 +105,9 @@ export function useActionDispatcher() {
           return { ok: true };
         case "open_cart":
           ui.openCart();
+          return { ok: true };
+        case "close_cart":
+          ui.closeCart();
           return { ok: true };
       }
     },

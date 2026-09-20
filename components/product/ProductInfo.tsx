@@ -33,7 +33,7 @@ export function ProductInfo({ product }: { product: Product }) {
   ];
 
   return (
-    <div>
+    <div data-agent-section="product.info">
       <nav aria-label="Breadcrumb" className="text-[12px] text-muted">
         <Link href="/shop" className="hover:text-ink">
           Shop

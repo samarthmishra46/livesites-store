@@ -5,7 +5,7 @@ import { hero } from "@/data/site";
 
 export function HeroSection() {
   return (
-    <section aria-labelledby="hero-title" className="relative overflow-hidden bg-[linear-gradient(180deg,#f9f7f8,#faf5f2)]">
+    <section data-agent-section="home.hero" aria-labelledby="hero-title" className="relative overflow-hidden bg-[linear-gradient(180deg,#f9f7f8,#faf5f2)]">
       <div className="relative mx-auto aspect-[676/536] w-full max-w-[1600px] md:aspect-auto md:h-[480px] lg:h-[clamp(560px,calc(100svh-190px),700px)]">
         {/* Photo: full-bleed on phones, anchored right on larger screens with the copy over its soft haze. */}
         <div data-assistant-anchor className="absolute inset-0 md:left-auto md:aspect-[676/536]">

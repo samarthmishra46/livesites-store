@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Clock, Mail, Phone } from "lucide-react";
+import { contactHours } from "@/data/pages";
 import { site } from "@/data/site";
 import { ContactForm } from "@/components/contact/ContactForm";
 import { PageContainer } from "@/components/layout/PageContainer";
@@ -19,11 +20,11 @@ export default function ContactPage() {
       <PageContainer>
         <div className="grid gap-10 md:grid-cols-[1fr_320px] md:gap-14 lg:grid-cols-[1fr_360px]">
           <ContactForm />
-          <aside className="space-y-7 md:pt-2">
+          <aside data-agent-section="contact.details" className="space-y-7 md:pt-2">
             {[
               { icon: Mail, title: "Email", body: <a href={`mailto:${site.email}`} className="hover:underline">{site.email}</a> },
               { icon: Phone, title: "Phone", body: <a href={`tel:${site.phone.replace(/[^+\d]/g, "")}`} className="hover:underline">{site.phone}</a> },
-              { icon: Clock, title: "Hours", body: <>Monday–Friday, 9am–6pm ET<br />Replies within one business day</> },
+              { icon: Clock, title: "Hours", body: <>{contactHours.days}<br />{contactHours.reply}</> },
             ].map(({ icon: Icon, title, body }) => (
               <div key={title} className="flex gap-4">
                 <Icon className="mt-0.5 size-5 shrink-0 text-ink" strokeWidth={1.4} aria-hidden />
