@@ -110,6 +110,7 @@ export function createElevenLabsProvider(): AssistantProvider {
     name: "elevenlabs",
     posterSrc: "/images/assistant-portrait.jpg",
     requiresGesture: true,
+    hasVideo: false,
     connect() {
       if (conversation) return Promise.resolve();
       pending ??= start().finally(() => {

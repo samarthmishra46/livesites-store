@@ -23,6 +23,7 @@ export function createMockAssistantProvider(): AssistantProvider {
     name: "mock",
     posterSrc: "/images/assistant-portrait.jpg",
     requiresGesture: false,
+    hasVideo: false,
     connect() {
       if (connected) return Promise.resolve();
       pending ??= (async () => {

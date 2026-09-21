@@ -12,6 +12,7 @@
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { FIRST_MESSAGE, FIRST_MESSAGE_HI } from "@/lib/agent/knowledge";
 import { agentTools, toElevenLabsToolConfig } from "@/lib/agent/tools";
+import { requestJson } from "@/lib/server/requestJson";
 
 const API = "https://api.elevenlabs.io";
 
@@ -50,14 +51,9 @@ const model = env("OPENAI_MODEL", false) || "gpt-4.1-mini";
 let secretId = env("ELEVENLABS_LLM_SECRET_ID", false);
 
 async function api<T>(method: string, path: string, body?: unknown): Promise<T> {
-  const res = await fetch(`${API}${path}`, {
-    method,
-    headers: { "xi-api-key": apiKey, "Content-Type": "application/json" },
-    body: body === undefined ? undefined : JSON.stringify(body),
-  });
-  const text = await res.text();
-  if (!res.ok) throw new Error(`${method} ${path} → ${res.status}\n${text}`);
-  return (text ? JSON.parse(text) : {}) as T;
+  const res = await requestJson(`${API}${path}`, { method, headers: { "xi-api-key": apiKey }, body });
+  if (!res.ok) throw new Error(`${method} ${path} → ${res.status}\n${res.text}`);
+  return (res.text ? JSON.parse(res.text) : {}) as T;
 }
 
 const systemTool = (name: string) => ({ type: "system", name, description: "", params: { system_tool_type: name } });
@@ -108,10 +104,17 @@ async function main() {
           built_in_tools: { language_detection: systemTool("language_detection"), end_call: systemTool("end_call") },
         },
       },
-      // Flash v2.5 is the lowest-latency model that also speaks Hindi.
-      tts: { model_id: "eleven_flash_v2_5", ...(voiceId ? { voice_id: voiceId } : {}), agent_output_audio_format: "pcm_24000" },
+      // ElevenLabs requires a v2 model for English agents; Hindi needs v2.5, set per language below.
+      tts: { model_id: "eleven_flash_v2", ...(voiceId ? { voice_id: voiceId } : {}), agent_output_audio_format: "pcm_24000" },
       asr: { user_input_audio_format: "pcm_24000" },
-      language_presets: { hi: { overrides: { agent: { first_message: FIRST_MESSAGE_HI } } } },
+      language_presets: {
+        hi: {
+          overrides: {
+            agent: { first_message: FIRST_MESSAGE_HI },
+            tts: { model_id: "eleven_flash_v2_5" },
+          },
+        },
+      },
     },
     platform_settings: {
       // Sessions need a token from /api/agent/session; text-only is used when the mic is blocked.

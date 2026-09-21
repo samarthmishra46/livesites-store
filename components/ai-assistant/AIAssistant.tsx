@@ -4,7 +4,7 @@ import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useLayoutEffect, useRef, type KeyboardEvent, type PointerEvent } from "react";
 import { X } from "lucide-react";
-import { assistantUI, assistantUIStore, getAssistantOutputLevel, useAssistant } from "@/lib/ai-assistant/useAssistant";
+import { assistantUI, assistantUIStore, attachAssistantVideo, getAssistantOutputLevel, useAssistant } from "@/lib/ai-assistant/useAssistant";
 import type { AssistantStatus } from "@/lib/ai-assistant/types";
 import { clamp, cn } from "@/lib/utils";
 import { AIAssistantChat } from "./AIAssistantChat";
@@ -64,10 +64,10 @@ const statusLabel: Record<AssistantStatus, string> = {
 };
 
 const bubble =
-  "absolute inset-x-[1.05em] bottom-[4.05em] line-clamp-5 animate-rise-in rounded-[1.6em] bg-[#6b6360]/45 px-[0.55em] py-[0.6em] text-center font-display text-[0.93em] leading-[1.36] text-white backdrop-blur-md [text-shadow:0_1px_1px_rgb(0_0_0/0.12)]";
+  "absolute inset-x-[1.05em] bottom-[4.05em] max-h-[7.2em] overflow-hidden [mask-image:linear-gradient(to_bottom,black_5.6em,transparent)] animate-rise-in rounded-[1.6em] bg-[#6b6360]/45 px-[0.55em] py-[0.6em] text-center font-display text-[0.93em] leading-[1.36] text-white backdrop-blur-md [text-shadow:0_1px_1px_rgb(0_0_0/0.12)]";
 
 export function AIAssistant() {
-  const { ui, session, posterSrc } = useAssistant();
+  const { ui, session, posterSrc, hasVideo } = useAssistant();
   const pathname = usePathname();
   const cardRef = useRef<HTMLElement>(null);
   const launcherRef = useRef<HTMLButtonElement>(null);
@@ -75,6 +75,7 @@ export function AIAssistant() {
   const current = useRef<Point | null>(null);
   const wasOpen = useRef(ui.open);
   const haloRef = useRef<HTMLDivElement>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
 
   // Position before paint on open, on route change and whenever the saved position changes.
   const layout = useCallback(() => {
@@ -102,6 +103,12 @@ export function AIAssistant() {
     wasOpen.current = ui.open;
     requestAnimationFrame(() => (ui.open ? cardRef.current : launcherRef.current)?.focus({ preventScroll: true }));
   }, [ui.open]);
+
+  useEffect(() => {
+    if (!hasVideo || !ui.open) return;
+    attachAssistantVideo(videoRef.current);
+    return () => attachAssistantVideo(null);
+  }, [hasVideo, ui.open]);
 
   // Speaking ring follows the loudness of the assistant's voice.
   useEffect(() => {
@@ -245,8 +252,20 @@ export function AIAssistant() {
           "group-data-[dragging=true]/assistant:scale-[1.03] group-data-[dragging=true]/assistant:shadow-[0_24px_48px_-12px_rgb(24_20_16/0.35)]",
         )}
       >
-        {/* video feed (poster in Phase 1) */}
+        {/* live avatar video, with the portrait as poster and fallback */}
         <div className="absolute inset-0 overflow-hidden" aria-hidden>
+          {hasVideo && (
+            <video
+              ref={videoRef}
+              autoPlay
+              playsInline
+              poster={posterSrc}
+              className={cn(
+                "absolute inset-0 size-full object-cover transition-opacity duration-500 ease-soft",
+                ui.cameraEnabled && live ? "opacity-100" : "opacity-0",
+              )}
+            />
+          )}
           <Image
             src={posterSrc}
             alt=""

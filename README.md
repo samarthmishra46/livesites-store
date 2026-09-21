@@ -112,9 +112,30 @@ replies short.
 In the browser console: `livesitesAgent.run("highlight_section", { section_id: "shipping.returns" })`, or
 `livesitesAgent.context()` to see what the agent is told about the page.
 
-### Next: live avatar (Phase 2B)
+### Live avatar (Phase 2B)
 
-HeyGen LiveAvatar (stock avatar) via its ElevenLabs connector. It becomes one more provider,
-`lib/ai-assistant/liveAvatarProvider.ts`, reusing the same agent, tools and UI; ElevenLabs' own Avatars only make
-pre-rendered videos, so they can't be used live.
+The card can show a lip-synced face instead of the portrait. **HeyGen LiveAvatar** renders the
+video; the agent, prompt, tools and validation are unchanged — LiveAvatar connects to the same
+ElevenLabs agent (LITE mode) and forwards its tool calls to the browser over the LiveKit data
+channel, where they run through the same dispatcher.
+
+```
+LiveAvatar worker ──talks to──► your ElevenLabs agent ──► /api/agent/llm ──► OpenAI
+        │ avatar video + agent audio (WebRTC)        │ tool calls (data channel)
+        ▼                                            ▼
+   <video> in the card                     runAgentTool → useActionDispatcher
+```
+
+1. Put your LiveAvatar API key in `LIVEAVATAR_API_KEY` (HeyGen dashboard → LiveAvatar → API).
+2. `npm run avatar:setup` — stores your ElevenLabs key in LiveAvatar's vault and saves
+   `LIVEAVATAR_SECRET_ID`. `npm run avatar:setup -- --list` prints every stock avatar id.
+3. Set `NEXT_PUBLIC_ASSISTANT_PROVIDER=liveavatar` and restart.
+
+`LIVEAVATAR_SANDBOX=1` uses free sandbox sessions while developing: no credits, but always the
+"Wayne" avatar and about a minute per session. Set it to `0` for `LIVEAVATAR_AVATAR_ID`
+(video costs 1 LiveAvatar credit per minute, on top of ElevenLabs and OpenAI usage).
+
+Switching back to `NEXT_PUBLIC_ASSISTANT_PROVIDER=elevenlabs` gives voice only, with no video
+costs; `mock` runs the UI with no keys at all.
+
 # livesites-store

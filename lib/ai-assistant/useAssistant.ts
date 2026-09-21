@@ -7,6 +7,7 @@ import { describePage } from "@/lib/agent/pageContext";
 import { runAgentTool } from "@/lib/agent/tools";
 import { createStore, useStore } from "@/lib/store/createStore";
 import { createElevenLabsProvider, loadElevenLabsSdk } from "./elevenLabsProvider";
+import { createLiveAvatarProvider, loadLiveAvatarSdk } from "./liveAvatarProvider";
 import { createMockAssistantProvider } from "./mockProvider";
 import type { AssistantMessage, AssistantProvider, AssistantStatus, AssistantUIState } from "./types";
 
@@ -45,10 +46,19 @@ const sessionStore = createStore<SessionState>({
   latencyMs: null,
 });
 
-const voiceAgentEnabled = process.env.NEXT_PUBLIC_ASSISTANT_PROVIDER === "elevenlabs";
+/** "liveavatar" = voice + lip-synced video, "elevenlabs" = voice only, anything else = offline mock. */
+const providerName = process.env.NEXT_PUBLIC_ASSISTANT_PROVIDER;
+
+function createProvider() {
+  if (providerName === "liveavatar") return createLiveAvatarProvider();
+  if (providerName === "elevenlabs") return createElevenLabsProvider();
+  return createMockAssistantProvider();
+}
 
 let provider: AssistantProvider | null = null;
-const getProvider = () => (provider ??= voiceAgentEnabled ? createElevenLabsProvider() : createMockAssistantProvider());
+const getProvider = () => (provider ??= createProvider());
+
+const preloadSdk = () => void (providerName === "liveavatar" ? loadLiveAvatarSdk() : loadElevenLabsSdk());
 
 const isConnected = () => {
   const { status } = sessionStore.get();
@@ -82,6 +92,9 @@ export const assistantUI = {
 };
 
 export const getAssistantOutputLevel = () => getProvider().getOutputLevel();
+
+/** The card hands its <video> element to providers that stream avatar video. */
+export const attachAssistantVideo = (element: HTMLVideoElement | null) => getProvider().attachVideo?.(element);
 
 /** Connects the provider, routes its actions and keeps it informed about the page. */
 export function useAssistant() {
@@ -136,7 +149,7 @@ export function useAssistant() {
       void p.connect();
       return;
     }
-    const idle = window.requestIdleCallback?.(() => void loadElevenLabsSdk()) ?? window.setTimeout(() => void loadElevenLabsSdk(), 1500);
+    const idle = window.requestIdleCallback?.(preloadSdk) ?? window.setTimeout(preloadSdk, 1500);
     const start = (e: Event) => {
       // closing the card is not an invitation to talk
       if ((e.target as Element | null)?.closest?.("[data-assistant-close]")) return;
@@ -175,5 +188,5 @@ export function useAssistant() {
     };
   }, [connected, pathname]);
 
-  return { ui, session, posterSrc: getProvider().posterSrc };
+  return { ui, session, posterSrc: getProvider().posterSrc, hasVideo: getProvider().hasVideo };
 }

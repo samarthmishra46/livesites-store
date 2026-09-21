@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { clientIp, rateLimit } from "@/lib/server/rateLimit";
+import { requestJson } from "@/lib/server/requestJson";
 
 export const dynamic = "force-dynamic";
 
@@ -19,15 +20,17 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Too many sessions started. Try again in a minute." }, { status: 429 });
   }
 
-  const res = await fetch(`${ELEVENLABS_API}/v1/convai/conversation/token?agent_id=${encodeURIComponent(agentId)}`, {
+  const res = await requestJson(`${ELEVENLABS_API}/v1/convai/conversation/token?agent_id=${encodeURIComponent(agentId)}`, {
     headers: { "xi-api-key": apiKey },
-    cache: "no-store",
+  }).catch((err: Error) => {
+    console.error(`[agent-session] ${err.message}`);
+    return null;
   });
-  if (!res.ok) {
-    console.error(`[agent-session] ElevenLabs token request failed: ${res.status} ${await res.text()}`);
+  if (!res?.ok) {
+    if (res) console.error(`[agent-session] ElevenLabs token request failed: ${res.status} ${res.text}`);
     return NextResponse.json({ error: "Couldn't start a voice session." }, { status: 502 });
   }
-  const { token } = (await res.json()) as { token?: string };
+  const { token } = JSON.parse(res.text) as { token?: string };
   if (!token) return NextResponse.json({ error: "Couldn't start a voice session." }, { status: 502 });
   return NextResponse.json({ token }, { headers: { "Cache-Control": "no-store" } });
 }

@@ -34,8 +34,12 @@ export interface AssistantProvider {
   readonly posterSrc: string;
   /** Audio providers can only start after a user gesture (browser autoplay rules). */
   readonly requiresGesture: boolean;
+  /** True when the provider streams avatar video into the card's <video> element. */
+  readonly hasVideo: boolean;
   connect(): Promise<void>;
   disconnect(): Promise<void>;
+  /** Hands the card's <video> element to a video provider (null on unmount). */
+  attachVideo?(element: HTMLVideoElement | null): void;
   setMicrophoneEnabled(enabled: boolean): void;
   setCameraEnabled(enabled: boolean): void;
   sendUserMessage(text: string): Promise<void>;
