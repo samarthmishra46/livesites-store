@@ -192,6 +192,8 @@ export function AIAssistant() {
   };
 
   const live = session.status === "live" || session.status === "idle" || session.status === "connecting";
+  // The avatar track only plays once the session is connected; "muted" is the mic, not the video.
+  const videoLive = hasVideo && ui.cameraEnabled && (session.status === "live" || session.status === "muted");
   const offline = session.status === "error" || session.status === "disconnected";
   const message = (offline && session.detail) || session.message?.text || GREETING;
 
@@ -261,8 +263,8 @@ export function AIAssistant() {
               playsInline
               poster={posterSrc}
               className={cn(
-                "absolute inset-0 size-full object-cover transition-opacity duration-500 ease-soft",
-                ui.cameraEnabled && live ? "opacity-100" : "opacity-0",
+                "absolute inset-0 z-10 size-full object-cover transition-opacity duration-500 ease-soft",
+                videoLive ? "opacity-100" : "opacity-0",
               )}
             />
           )}
@@ -274,8 +276,9 @@ export function AIAssistant() {
             draggable={false}
             sizes="(min-width: 1024px) 168px, (min-width: 768px) 137px, 105px"
             className={cn(
-              "object-cover object-[50%_18%] transition-[filter,transform] duration-500 ease-soft",
+              "object-cover object-[50%_18%] transition-[filter,transform,opacity] duration-500 ease-soft",
               ui.cameraEnabled ? "animate-breathe" : "scale-110 blur-[10px] brightness-[0.85]",
+              videoLive && "opacity-0",
             )}
           />
           {!ui.cameraEnabled && (

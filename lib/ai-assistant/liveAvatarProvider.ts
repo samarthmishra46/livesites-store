@@ -31,6 +31,8 @@ export function createLiveAvatarProvider(): AssistantProvider {
   let pending: Promise<void> | null = null;
   let handler: ActionHandler | null = null;
   let video: HTMLVideoElement | null = null;
+  /** The SDK rejects attach() until the avatar's tracks are subscribed. */
+  let streamReady = false;
   let micEnabled = true;
   let ending = false;
   let seq = 0;
@@ -64,12 +66,24 @@ export function createLiveAvatarProvider(): AssistantProvider {
     }
   }
 
+  /** Attaches the avatar track once both the element and the stream exist, in either order. */
+  function attachStream() {
+    if (!streamReady || !video || !session) return;
+    try {
+      session.attach(video);
+      meter();
+    } catch (err) {
+      console.warn("[assistant] avatar attach failed", err);
+    }
+  }
+
   async function start() {
     status("connecting");
     try {
       const [sdk, token] = await Promise.all([loadLiveAvatarSdk(), fetchSessionToken()]);
       const { ElevenLabsAgentSession, AgentEventsEnum, SessionEvent } = sdk;
       ending = false;
+      streamReady = false;
       const s = new ElevenLabsAgentSession(token, { autoKeepAlive: true, voiceChat: { defaultMuted: !micEnabled } });
       session = s;
 
@@ -106,21 +120,28 @@ export function createLiveAvatarProvider(): AssistantProvider {
         }
       });
 
+      s.on(SessionEvent.SESSION_STREAM_READY, () => {
+        streamReady = true;
+        attachStream();
+      });
+
       s.on(SessionEvent.SESSION_DISCONNECTED, (reason) => {
         session = null;
+        streamReady = false;
         bus.emit("speaking", false);
         if (ending) status("disconnected");
         else status("error", `Avatar disconnected (${reason}). Tap to reconnect.`);
       });
       s.on(AgentEventsEnum.SESSION_STOPPED, () => {
         session = null;
+        streamReady = false;
         bus.emit("speaking", false);
         status("disconnected", "Session ended. Tap to start again.");
       });
 
       await s.start();
-      if (video) s.attach(video);
-      meter();
+      // attach happens on SESSION_STREAM_READY; this covers a stream ready before we got here
+      attachStream();
       bus.emit("inputMode", "voice");
       liveStatus();
     } catch (err) {
@@ -153,10 +174,7 @@ export function createLiveAvatarProvider(): AssistantProvider {
     },
     attachVideo(element) {
       video = element;
-      if (element && session) {
-        session.attach(element);
-        meter();
-      }
+      attachStream();
     },
     setMicrophoneEnabled(enabled) {
       micEnabled = enabled;
