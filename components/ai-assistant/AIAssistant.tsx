@@ -333,7 +333,9 @@ export function AIAssistant() {
             {message}
           </button>
         ) : (
-          <p key={message} aria-live="polite" className={bubble}>
+          // Captions would cover the avatar's face, so once the video is up they carry on
+          // for screen readers only; the chat panel still shows the full transcript.
+          <p key={message} aria-live="polite" className={videoLive ? "sr-only" : bubble}>
             {message}
           </p>
         )}
