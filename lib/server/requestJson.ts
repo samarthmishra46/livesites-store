@@ -1,10 +1,17 @@
-import { request } from "node:https";
+import { Agent, request } from "node:https";
 
 export interface JsonResponse {
   status: number;
   ok: boolean;
   text: string;
 }
+
+/**
+ * Sockets are pooled and kept warm: starting an avatar session makes two upstream
+ * calls in a row (ElevenLabs, then Anam), and reusing a connection saves the TCP
+ * and TLS handshakes on every session after the first.
+ */
+const agent = new Agent({ keepAlive: true, keepAliveMsecs: 30_000, maxSockets: 64, family: 4 });
 
 /**
  * Small JSON HTTPS request that resolves IPv4 only.
@@ -28,6 +35,7 @@ export function requestJson(url: string, options: { method?: string; headers?: R
         path: `${target.pathname}${target.search}`,
         method,
         family: 4,
+        agent,
         headers: {
           ...headers,
           ...(payload ? { "Content-Type": "application/json", "Content-Length": Buffer.byteLength(payload) } : {}),

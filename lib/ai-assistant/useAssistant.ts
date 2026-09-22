@@ -6,8 +6,8 @@ import { useActionDispatcher } from "@/lib/actions/useActionDispatcher";
 import { describePage } from "@/lib/agent/pageContext";
 import { runAgentTool } from "@/lib/agent/tools";
 import { createStore, useStore } from "@/lib/store/createStore";
+import { createAnamProvider } from "./anamProvider";
 import { createElevenLabsProvider, loadElevenLabsSdk } from "./elevenLabsProvider";
-import { createLiveAvatarProvider, loadLiveAvatarSdk } from "./liveAvatarProvider";
 import { createMockAssistantProvider } from "./mockProvider";
 import type { AssistantMessage, AssistantProvider, AssistantStatus, AssistantUIState } from "./types";
 
@@ -46,11 +46,11 @@ const sessionStore = createStore<SessionState>({
   latencyMs: null,
 });
 
-/** "liveavatar" = voice + lip-synced video, "elevenlabs" = voice only, anything else = offline mock. */
+/** "anam" = voice + lip-synced video, "elevenlabs" = voice only, anything else = offline mock. */
 const providerName = process.env.NEXT_PUBLIC_ASSISTANT_PROVIDER;
 
 function createProvider() {
-  if (providerName === "liveavatar") return createLiveAvatarProvider();
+  if (providerName === "anam") return createAnamProvider();
   if (providerName === "elevenlabs") return createElevenLabsProvider();
   return createMockAssistantProvider();
 }
@@ -58,7 +58,22 @@ function createProvider() {
 let provider: AssistantProvider | null = null;
 const getProvider = () => (provider ??= createProvider());
 
-const preloadSdk = () => void (providerName === "liveavatar" ? loadLiveAvatarSdk() : loadElevenLabsSdk());
+/** Loads the SDK and pre-fetches the session token so the first click only handshakes. */
+const warmUp = () => {
+  const p = getProvider();
+  if (p.warmUp) p.warmUp();
+  else if (providerName === "elevenlabs") void loadElevenLabsSdk();
+};
+
+/** Streamed replies arrive chunk by chunk under one id, so they grow in place. */
+function mergeMessage(transcript: AssistantMessage[], message: AssistantMessage & { append?: boolean }) {
+  const { append, ...next } = message;
+  const at = transcript.findIndex((m) => m.id === next.id);
+  if (at === -1) return [...transcript, next].slice(-40);
+  const merged = [...transcript];
+  merged[at] = append ? { ...next, text: merged[at].text + next.text } : next;
+  return merged;
+}
 
 const isConnected = () => {
   const { status } = sessionStore.get();
@@ -110,11 +125,14 @@ export function useAssistant() {
     const offs = [
       p.on("status", ({ status, detail }) => sessionStore.set((s) => ({ ...s, status, detail: detail ?? null }))),
       p.on("message", (message) =>
-        sessionStore.set((s) => ({
-          ...s,
-          message: message.role === "assistant" ? message : s.message,
-          transcript: [...s.transcript, message].slice(-40),
-        })),
+        sessionStore.set((s) => {
+          const transcript = mergeMessage(s.transcript, message);
+          return {
+            ...s,
+            message: message.role === "assistant" ? (transcript.find((m) => m.id === message.id) ?? s.message) : s.message,
+            transcript,
+          };
+        }),
       ),
       p.on("speaking", (speaking) => sessionStore.set((s) => ({ ...s, speaking }))),
       p.on("inputMode", (inputMode) => {
@@ -149,7 +167,7 @@ export function useAssistant() {
       void p.connect();
       return;
     }
-    const idle = window.requestIdleCallback?.(preloadSdk) ?? window.setTimeout(preloadSdk, 1500);
+    const idle = window.requestIdleCallback?.(warmUp) ?? window.setTimeout(warmUp, 1500);
     const start = (e: Event) => {
       // closing the card is not an invitation to talk
       if ((e.target as Element | null)?.closest?.("[data-assistant-close]")) return;
@@ -188,5 +206,6 @@ export function useAssistant() {
     };
   }, [connected, pathname]);
 
-  return { ui, session, posterSrc: getProvider().posterSrc, hasVideo: getProvider().hasVideo };
+  const provider = getProvider();
+  return { ui, session, posterSrc: provider.posterSrc, posterPosition: provider.posterPosition, hasVideo: provider.hasVideo };
 }

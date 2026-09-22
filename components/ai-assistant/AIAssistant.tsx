@@ -4,6 +4,7 @@ import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useLayoutEffect, useRef, type KeyboardEvent, type PointerEvent } from "react";
 import { X } from "lucide-react";
+import { ANAM_VIDEO_ELEMENT_ID } from "@/lib/ai-assistant/anamProvider";
 import { assistantUI, assistantUIStore, attachAssistantVideo, getAssistantOutputLevel, useAssistant } from "@/lib/ai-assistant/useAssistant";
 import type { AssistantStatus } from "@/lib/ai-assistant/types";
 import { clamp, cn } from "@/lib/utils";
@@ -67,7 +68,9 @@ const bubble =
   "absolute inset-x-[1.05em] bottom-[4.05em] max-h-[7.2em] overflow-hidden [mask-image:linear-gradient(to_bottom,black_5.6em,transparent)] animate-rise-in rounded-[1.6em] bg-[#6b6360]/45 px-[0.55em] py-[0.6em] text-center font-display text-[0.93em] leading-[1.36] text-white backdrop-blur-md [text-shadow:0_1px_1px_rgb(0_0_0/0.12)]";
 
 export function AIAssistant() {
-  const { ui, session, posterSrc, hasVideo } = useAssistant();
+  const { ui, session, posterSrc, posterPosition, hasVideo } = useAssistant();
+  // The bundled stylist photo needs its face pulled up; an avatar frame is already centred.
+  const posterCrop = posterPosition ?? "object-[50%_18%]";
   const pathname = usePathname();
   const cardRef = useRef<HTMLElement>(null);
   const launcherRef = useRef<HTMLButtonElement>(null);
@@ -207,7 +210,7 @@ export function AIAssistant() {
         className="group fixed right-3 bottom-[calc(var(--nav-h)+14px)] z-30 flex animate-assistant-in items-center gap-3 rounded-full bg-white/90 p-1 shadow-float ring-1 ring-black/5 backdrop-blur-md transition-transform hover:-translate-y-0.5 lg:right-6 lg:bottom-6 lg:pr-5"
       >
         <span className="relative block size-12 overflow-hidden rounded-full">
-          <Image src={posterSrc} alt="" fill sizes="48px" className="scale-[1.6] object-cover object-[50%_18%]" />
+          <Image src={posterSrc} alt="" fill sizes="48px" className={cn("scale-[1.6] object-cover", posterCrop)} />
         </span>
         <span className="absolute top-1 left-10 size-3 rounded-full bg-live ring-2 ring-white" aria-hidden />
         <span className="hidden text-left lg:block">
@@ -255,10 +258,12 @@ export function AIAssistant() {
         )}
       >
         {/* live avatar video, with the portrait as poster and fallback */}
-        <div className="absolute inset-0 overflow-hidden" aria-hidden>
+        {/* `isolate` keeps the video's z-10 above the poster without covering the card's controls */}
+        <div className="absolute inset-0 isolate overflow-hidden" aria-hidden>
           {hasVideo && (
             <video
               ref={videoRef}
+              id={ANAM_VIDEO_ELEMENT_ID}
               autoPlay
               playsInline
               poster={posterSrc}
@@ -276,7 +281,8 @@ export function AIAssistant() {
             draggable={false}
             sizes="(min-width: 1024px) 168px, (min-width: 768px) 137px, 105px"
             className={cn(
-              "object-cover object-[50%_18%] transition-[filter,transform,opacity] duration-500 ease-soft",
+              "object-cover transition-[filter,transform,opacity] duration-500 ease-soft",
+              posterCrop,
               ui.cameraEnabled ? "animate-breathe" : "scale-110 blur-[10px] brightness-[0.85]",
               videoLive && "opacity-0",
             )}
@@ -284,7 +290,7 @@ export function AIAssistant() {
           {!ui.cameraEnabled && (
             <div className="absolute inset-x-0 top-[5.2em] flex animate-fade-in flex-col items-center gap-[0.5em] text-white">
               <span className="relative block size-[3.6em] overflow-hidden rounded-full ring-[0.15em] ring-white/80">
-                <Image src={posterSrc} alt="" fill sizes="60px" className="scale-[1.7] object-cover object-[50%_20%]" />
+                <Image src={posterSrc} alt="" fill sizes="60px" className={cn("scale-[1.7] object-cover", posterCrop)} />
               </span>
               <span className="text-[0.85em] font-medium [text-shadow:0_1px_2px_rgb(0_0_0/0.3)]">Video paused</span>
             </div>

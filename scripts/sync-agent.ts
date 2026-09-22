@@ -42,11 +42,23 @@ function env(name: string, required = true) {
   return value ?? "";
 }
 
+/**
+ * ElevenLabs voice ids are 20 characters of base62 (e.g. cjVigY5qzO86Huf0OWal). A UUID
+ * here is usually an id copied from the avatar provider, and ElevenLabs would reject the
+ * whole agent update over it — so say so and keep the agent's current voice instead.
+ */
+function elevenLabsVoiceId() {
+  const value = env("ELEVENLABS_VOICE_ID", false);
+  if (!value || /^[A-Za-z0-9]{20}$/.test(value)) return value;
+  console.warn(`  ELEVENLABS_VOICE_ID "${value}" is not an ElevenLabs voice id — leaving the agent's voice unchanged.`);
+  return "";
+}
+
 const apiKey = env("ELEVENLABS_API_KEY");
 const publicUrl = env("AGENT_PUBLIC_URL").replace(/\/+$/, "");
 const llmSecret = env("AGENT_LLM_SECRET");
 const agentId = env("ELEVENLABS_AGENT_ID", false);
-const voiceId = env("ELEVENLABS_VOICE_ID", false);
+const voiceId = elevenLabsVoiceId();
 const model = env("OPENAI_MODEL", false) || "gpt-4.1-mini";
 let secretId = env("ELEVENLABS_LLM_SECRET_ID", false);
 
@@ -105,8 +117,37 @@ async function main() {
         },
       },
       // ElevenLabs requires a v2 model for English agents; Hindi needs v2.5, set per language below.
-      tts: { model_id: "eleven_flash_v2", ...(voiceId ? { voice_id: voiceId } : {}), agent_output_audio_format: "pcm_24000" },
-      asr: { user_input_audio_format: "pcm_24000" },
+      // Flash is the lowest-latency voice model; 3 is the most streaming optimisation that
+      // still keeps ElevenLabs' text normaliser (4 drops it and mangles prices and sizes).
+      tts: {
+        model_id: "eleven_flash_v2",
+        ...(voiceId ? { voice_id: voiceId } : {}),
+        // The browser forwards this audio straight to the avatar, which lip-syncs
+        // 16 kHz mono PCM; matching here avoids resampling on the way through.
+        agent_output_audio_format: "pcm_16000",
+        optimize_streaming_latency: 3,
+      },
+      asr: { user_input_audio_format: "pcm_16000" },
+      conversation: {
+        // Everything the card needs and nothing it doesn't. `client_tool_call` is the
+        // one that matters most: without it the agent's tools never reach the page.
+        client_events: [
+          "conversation_initiation_metadata",
+          "ping",
+          "audio",
+          "interruption",
+          "user_transcript",
+          "agent_response",
+          "agent_response_correction",
+          "internal_tentative_agent_response",
+          "agent_response_complete",
+          "client_tool_call",
+        ],
+      },
+      // The assistant sits in the corner of a shop while people browse, so it waits
+      // instead of asking "are you still there?" every few seconds. Those nudge turns
+      // also arrive between a typed question and its answer and displace it.
+      turn: { turn_timeout: -1 },
       language_presets: {
         hi: {
           overrides: {

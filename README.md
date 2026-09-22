@@ -53,7 +53,7 @@ Where things live:
 - `data/`: mock products and site copy
 - `lib/store/`: wishlist, bag, colour selection and UI state (localStorage-backed)
 - `lib/actions/`: the single action dispatcher (`useActionDispatcher`) shared by the UI and, in Phase 2, the assistant
-- `lib/ai-assistant/`: provider interface (`types.ts`), the mock provider and the ElevenLabs voice provider; `useAssistant.ts` picks one
+- `lib/ai-assistant/`: provider interface (`types.ts`), the mock, ElevenLabs voice and Anam avatar providers; `useAssistant.ts` picks one
 - `lib/agent/`: what the agent knows and can do — site map, tools, system prompt, page context, section spotlight
 - `scripts/`: Python scripts that derive `public/images/` from `assets/reference-full.jpg`
   (`pip install numpy opencv-python-headless`, then run `clean-reference-images.py` followed by `recolor-variants.py`),
@@ -114,28 +114,74 @@ In the browser console: `livesitesAgent.run("highlight_section", { section_id: "
 
 ### Live avatar (Phase 2B)
 
-The card can show a lip-synced face instead of the portrait. **HeyGen LiveAvatar** renders the
-video; the agent, prompt, tools and validation are unchanged — LiveAvatar connects to the same
-ElevenLabs agent (LITE mode) and forwards its tool calls to the browser over the LiveKit data
-channel, where they run through the same dispatcher.
+The card can show a lip-synced face instead of the portrait. **Anam** renders the video. The
+browser holds the ElevenLabs conversation itself and pipes the agent's voice into Anam, which
+sends back video with that audio in sync. Prompt, tools, validation and the OpenAI brain are
+untouched.
 
 ```
-LiveAvatar worker ──talks to──► your ElevenLabs agent ──► /api/agent/llm ──► OpenAI
-        │ avatar video + agent audio (WebRTC)        │ tool calls (data channel)
-        ▼                                            ▼
-   <video> in the card                     runAgentTool → useActionDispatcher
+mic ──16kHz PCM──► ElevenLabs agent ──► /api/agent/llm ──► OpenAI
+                         │ voice (PCM)      │ client tool calls
+                         ▼                  ▼
+                   Anam (lip-sync)    runAgentTool → useActionDispatcher
+                         │
+                         ▼ video + audio (WebRTC)
+                  <video> in the card
 ```
 
-1. Put your LiveAvatar API key in `LIVEAVATAR_API_KEY` (HeyGen dashboard → LiveAvatar → API).
-2. `npm run avatar:setup` — stores your ElevenLabs key in LiveAvatar's vault and saves
-   `LIVEAVATAR_SECRET_ID`. `npm run avatar:setup -- --list` prints every stock avatar id.
-3. Set `NEXT_PUBLIC_ASSISTANT_PROVIDER=liveavatar` and restart.
+1. Create an API key at [lab.anam.ai](https://lab.anam.ai) and put it in `ANAM_API_KEY`.
+2. Pick a **Cara 4** avatar from the Lab's Avatars page and put its id in `NEXT_PUBLIC_ANAM_AVATAR_ID`.
+3. `npm run agent:sync` — sets the agent's audio to PCM 16 kHz both ways and enables the
+   client events this path needs, `client_tool_call` above all.
+4. Set `NEXT_PUBLIC_ASSISTANT_PROVIDER=anam` and restart.
 
-`LIVEAVATAR_SANDBOX=1` uses free sandbox sessions while developing: no credits, but always the
-"Wayne" avatar and about a minute per session. Set it to `0` for `LIVEAVATAR_AVATAR_ID`
-(video costs 1 LiveAvatar credit per minute, on top of ElevenLabs and OpenAI usage).
+`/api/agent/avatar-session` mints both halves in one round trip: an Anam audio-passthrough
+token and a short-lived ElevenLabs signed URL. Neither API key reaches the browser.
 
-Switching back to `NEXT_PUBLIC_ASSISTANT_PROVIDER=elevenlabs` gives voice only, with no video
+The card's poster — the still shown before the stream arrives, and behind the launcher and the
+"video paused" state — is the avatar's own image, derived from the id:
+`https://lab.anam.ai/api/avatars/<id>/image/landscape`. It's the *landscape* crop on purpose:
+Cara 4 renders live video at 1152×768, so the same 3:2 source keeps the face exactly as framed
+when the video takes over. (The avatar's `videoUrl`/`idleVideoUrl` are presigned and expire
+hourly, so they can't be used as a static source.) `lab.anam.ai` is allowed in
+`next.config.ts`; switching `NEXT_PUBLIC_ASSISTANT_PROVIDER` back to `elevenlabs` or `mock`
+restores the bundled stylist portrait.
+
+Anam also offers a server-side ElevenLabs connector, which is one hop shorter. It is not used
+here because it bridges audio only: `sendUserMessage()` and `addContext()` land in Anam's own
+session record and never reach the agent, which would cost this build both its typed fallback
+and the agent's awareness of the page.
+
+Optional: `ANAM_REGION=us|eu` pins the engine region; leave it empty for automatic routing.
+Sessions are billed per minute by Anam, on top of ElevenLabs and OpenAI usage. Recording is
+off (`sessionReplay.enableSessionReplay: false`); turning it on in the session route also
+turns on Lab transcripts, which are useful when debugging a session.
+
+### Keeping it fast
+
+Measured on a real session, the avatar is not the bottleneck — ElevenLabs reports TTS first
+byte at ~100 ms and the first video frame lands ~4 s after the opening click. A turn is
+dominated by `/api/agent/llm`: ~1 s warm, but over 3 s on a cold serverless start, and a turn
+that calls a tool pays for two LLM round trips (~2.4 s) because the agent speaks after acting.
+
+What the build does about the parts it controls:
+
+- the SDK, the session token and the signed URL are fetched on idle, so the first click costs
+  only handshakes; `<link rel="preconnect">` warms the TLS connection before that
+- the server reuses keep-alive sockets for the ElevenLabs and Anam calls, and pins IPv4 so a
+  stalled AAAA lookup can't add 15 s
+- audio is PCM 16 kHz end to end, so nothing resamples on the way through, and the agent runs
+  `eleven_flash_v2` with `optimize_streaming_latency: 3`
+- `/api/agent/llm` streams OpenAI's SSE straight through behind a static, cacheable system
+  prompt — watch `[agent-llm] … ttft=…` in the server log
+- replies stream into the card as they're spoken, and tools that need no answer are
+  fire-and-forget, so the page moves while the agent is still talking
+
+Worth doing if turn latency matters: keep the deployment warm (cold starts dominate the first
+turn), host it near OpenAI, and keep replies short. `NEXT_PUBLIC_AGENT_DEBUG=1` shows the
+measured turn latency on the card.
+
+Switching to `NEXT_PUBLIC_ASSISTANT_PROVIDER=elevenlabs` gives voice only, with no video
 costs; `mock` runs the UI with no keys at all.
 
 # livesites-store

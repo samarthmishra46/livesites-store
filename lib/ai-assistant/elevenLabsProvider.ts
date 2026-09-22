@@ -134,7 +134,7 @@ export function createElevenLabsProvider(): AssistantProvider {
       liveStatus();
     },
     setCameraEnabled() {
-      // Voice-only for now; the LiveAvatar provider will pause its video here.
+      // Voice-only; the Anam provider keeps its session running when video is paused.
     },
     async sendUserMessage(text) {
       const message = text.trim();

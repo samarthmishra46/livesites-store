@@ -33,6 +33,10 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="en" className={`${inter.variable} ${interTight.variable} ${newsreader.variable}`}>
+      <head>
+        {/* The assistant opens its session and WebRTC signalling here; warm the TLS connection. */}
+        <link rel="preconnect" href="https://api.anam.ai" />
+      </head>
       <body className="min-h-dvh">
         <a
           href="#main"

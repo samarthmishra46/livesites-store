@@ -11,7 +11,8 @@ export interface AssistantMessage {
 /** Everything a provider reports back to the UI. */
 export interface AssistantEvents {
   status: { status: AssistantStatus; detail?: string };
-  message: AssistantMessage;
+  /** `append` streams a reply in: the text is the next chunk of the message with this id. */
+  message: AssistantMessage & { append?: boolean };
   /** The assistant's voice is playing. */
   speaking: boolean;
   /** "text" when the microphone is unavailable and the session runs as typed chat. */
@@ -25,17 +26,21 @@ export type ActionHandler = (action: AssistantAction) => DispatchResult;
 
 /**
  * Boundary between the floating assistant UI and whatever powers it (the mock, the
- * ElevenLabs voice agent, later a LiveAvatar video agent). The UI and the ecommerce
- * components never import a provider directly.
+ * ElevenLabs voice agent, the Anam avatar). The UI and the ecommerce components
+ * never import a provider directly.
  */
 export interface AssistantProvider {
   readonly name: string;
   /** Portrait/poster shown while video is unavailable. */
   readonly posterSrc: string;
+  /** Tailwind object-position for `posterSrc`; a stylist photo and an avatar frame crop differently. */
+  readonly posterPosition?: string;
   /** Audio providers can only start after a user gesture (browser autoplay rules). */
   readonly requiresGesture: boolean;
   /** True when the provider streams avatar video into the card's <video> element. */
   readonly hasVideo: boolean;
+  /** Optional: do the slow work (SDK, tokens) early so connect() is just a handshake. */
+  warmUp?(): void;
   connect(): Promise<void>;
   disconnect(): Promise<void>;
   /** Hands the card's <video> element to a video provider (null on unmount). */
