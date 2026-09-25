@@ -8,9 +8,9 @@ export const loadElevenLabsSdk = () => import("@elevenlabs/client");
 
 async function fetchConversationToken() {
   const res = await fetch("/api/agent/session", { method: "POST" });
-  const data = (await res.json().catch(() => ({}))) as { token?: string; error?: string };
+  const data = (await res.json().catch(() => ({}))) as { token?: string; voiceId?: string; error?: string };
   if (!res.ok || !data.token) throw new Error(data.error ?? "Couldn't start a voice session.");
-  return data.token;
+  return { token: data.token, voiceId: data.voiceId };
 }
 
 /** True when the browser can and may use the microphone. Asking here shows the permission prompt. */
@@ -57,14 +57,18 @@ export function createElevenLabsProvider(): AssistantProvider {
   async function start() {
     status("connecting");
     try {
-      const [{ Conversation }, token, hasMic] = await Promise.all([loadElevenLabsSdk(), fetchConversationToken(), microphoneAvailable()]);
+      const [{ Conversation }, { token, voiceId }, hasMic] = await Promise.all([loadElevenLabsSdk(), fetchConversationToken(), microphoneAvailable()]);
       const textOnly = !hasMic;
       ending = false;
       conversation = await Conversation.startSession({
         conversationToken: token,
         connectionType: "webrtc",
         textOnly,
-        overrides: textOnly ? { conversation: { textOnly: true } } : undefined,
+        // The voice comes from ELEVENLABS_VOICE_ID per session, so changing it needs no agent sync.
+        overrides: {
+          ...(textOnly ? { conversation: { textOnly: true } } : {}),
+          ...(voiceId ? { tts: { voiceId } } : {}),
+        },
         clientTools,
         onMessage: ({ message, role }) => {
           if (role === "user") {

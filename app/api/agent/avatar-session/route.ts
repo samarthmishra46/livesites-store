@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { clientIp, rateLimit } from "@/lib/server/rateLimit";
+import { agentVoiceId } from "@/lib/server/agentVoice";
 import { requestJson } from "@/lib/server/requestJson";
 
 export const dynamic = "force-dynamic";
@@ -35,13 +36,15 @@ export async function POST(req: NextRequest) {
   }
 
   // 1. The agent requires auth, so Anam needs a signed URL rather than a bare agent id.
-  const signed = await requestJson(
-    `${ELEVENLABS_API}/v1/convai/conversation/get-signed-url?agent_id=${encodeURIComponent(agentId)}`,
-    { headers: { "xi-api-key": elevenLabsKey } },
-  ).catch((err: Error) => {
-    console.error(`[avatar-session] ${err.message}`);
-    return null;
-  });
+  const [signed, voiceId] = await Promise.all([
+    requestJson(`${ELEVENLABS_API}/v1/convai/conversation/get-signed-url?agent_id=${encodeURIComponent(agentId)}`, {
+      headers: { "xi-api-key": elevenLabsKey },
+    }).catch((err: Error) => {
+      console.error(`[avatar-session] ${err.message}`);
+      return null;
+    }),
+    agentVoiceId(),
+  ]);
 
   if (!signed?.ok) {
     if (signed) console.error(`[avatar-session] ElevenLabs signed URL failed: ${signed.status} ${signed.text}`);
@@ -84,5 +87,5 @@ export async function POST(req: NextRequest) {
 
   const { sessionToken } = JSON.parse(session.text) as { sessionToken?: string };
   if (!sessionToken) return NextResponse.json({ error: "Couldn't start the avatar session." }, { status: 502 });
-  return NextResponse.json({ sessionToken, signedUrl }, { headers: { "Cache-Control": "no-store" } });
+  return NextResponse.json({ sessionToken, signedUrl, voiceId }, { headers: { "Cache-Control": "no-store" } });
 }

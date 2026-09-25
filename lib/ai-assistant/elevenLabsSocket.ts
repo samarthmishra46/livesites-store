@@ -80,7 +80,8 @@ interface ServerMessage {
   client_tool_call?: { tool_name?: string; tool_call_id?: string; parameters?: unknown };
 }
 
-export function connectAgentSocket(signedUrl: string, handlers: AgentSocketHandlers): AgentSocket {
+/** `voiceId`, when set, replaces the agent's voice for this conversation only. */
+export function connectAgentSocket(signedUrl: string, voiceId: string | undefined, handlers: AgentSocketHandlers): AgentSocket {
   const ws = new WebSocket(signedUrl);
   let closedCleanly = false;
 
@@ -94,7 +95,12 @@ export function connectAgentSocket(signedUrl: string, handlers: AgentSocketHandl
     if (ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify(payload));
   };
 
-  ws.onopen = () => handlers.onOpen();
+  ws.onopen = () => {
+    if (voiceId) {
+      send({ type: "conversation_initiation_client_data", conversation_config_override: { tts: { voice_id: voiceId } } });
+    }
+    handlers.onOpen();
+  };
 
   ws.onmessage = (event: MessageEvent<string>) => {
     let message: ServerMessage;

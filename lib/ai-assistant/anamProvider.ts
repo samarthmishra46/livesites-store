@@ -27,6 +27,7 @@ const TOKEN_MAX_AGE_MS = 4 * 60_000;
 interface AvatarSession {
   sessionToken: string;
   signedUrl: string;
+  voiceId?: string;
 }
 
 async function fetchSession(): Promise<AvatarSession> {
@@ -35,7 +36,7 @@ async function fetchSession(): Promise<AvatarSession> {
   if (!res.ok || !data.sessionToken || !data.signedUrl) {
     throw new Error(data.error ?? "Couldn't start the avatar session.");
   }
-  return { sessionToken: data.sessionToken, signedUrl: data.signedUrl };
+  return { sessionToken: data.sessionToken, signedUrl: data.signedUrl, voiceId: data.voiceId };
 }
 
 /**
@@ -215,7 +216,7 @@ export function createAnamProvider(): AssistantProvider {
       audioIn = anam.createAgentAudioInputStream({ encoding: "pcm_s16le", sampleRate: 16_000, channels: 1 });
 
       // 2. The conversation. Its voice becomes the avatar's.
-      socket = connectAgentSocket(session.signedUrl, {
+      socket = connectAgentSocket(session.signedUrl, session.voiceId, {
         onOpen: () => liveStatus(),
         onAudio: (base64) => {
           startedSpeaking();

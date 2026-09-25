@@ -58,7 +58,6 @@ const apiKey = env("ELEVENLABS_API_KEY");
 const publicUrl = env("AGENT_PUBLIC_URL").replace(/\/+$/, "");
 const llmSecret = env("AGENT_LLM_SECRET");
 const agentId = env("ELEVENLABS_AGENT_ID", false);
-const voiceId = elevenLabsVoiceId();
 const model = env("OPENAI_MODEL", false) || "gpt-4.1-mini";
 let secretId = env("ELEVENLABS_LLM_SECRET_ID", false);
 
@@ -72,6 +71,13 @@ const systemTool = (name: string) => ({ type: "system", name, description: "", p
 
 async function main() {
   if (!publicUrl.startsWith("https://")) throw new Error("AGENT_PUBLIC_URL must be a public https URL (a tunnel in development).");
+
+  // A Voice Library voice not yet added to My Voices would fail the whole update.
+  let voiceId = elevenLabsVoiceId();
+  if (voiceId && !(await api("GET", `/v1/voices/${voiceId}`).then(() => true, () => false))) {
+    console.warn(`  ELEVENLABS_VOICE_ID ${voiceId} isn't in this account's My Voices — leaving the agent's voice unchanged.`);
+    voiceId = "";
+  }
 
   // 1. The secret ElevenLabs sends as the bearer token to our LLM endpoint.
   if (!secretId) {
@@ -160,7 +166,8 @@ async function main() {
     platform_settings: {
       // Sessions need a token from /api/agent/session; text-only is used when the mic is blocked.
       auth: { enable_auth: true },
-      overrides: { conversation_config_override: { conversation: { text_only: true } } },
+      // The app sends ELEVENLABS_VOICE_ID with each session, so the voice changes without a sync.
+      overrides: { conversation_config_override: { conversation: { text_only: true }, tts: { voice_id: true } } },
     },
   };
 
