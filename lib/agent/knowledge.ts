@@ -4,7 +4,7 @@ import { sitePages } from "./siteMap";
 
 /** Spoken as soon as the session opens (English by default). */
 export const FIRST_MESSAGE =
-  "Hello, I'm the Live Sites agent from Yuvichaar Funnels. Welcome to Livesites! I can show you around, help you find the right piece, or explain anything on the page. What are you shopping for today?";
+  "Hello, I'm the Live Sites agent. Welcome to Livesites! I can show you around, help you find the right piece, or explain anything on the page. What are you shopping for today?";
 
 export const FIRST_MESSAGE_HI =
   "नमस्ते, मैं Yuvichaar Funnels का Live Sites एजेंट हूँ। Livesites में आपका स्वागत है! मैं आपको वेबसाइट दिखा सकता हूँ, सही पीस ढूँढने में मदद कर सकता हूँ, या पेज पर कुछ भी समझा सकता हूँ। आज आप क्या ढूँढ रहे हैं?";
